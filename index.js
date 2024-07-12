@@ -17,11 +17,11 @@ let authors = [
     id: "afa5b6f1-344d-11e9-a414-719c6709cf3e",
     born: 1821
   },
-  { 
+  {
     name: 'Joshua Kerievsky', // birthyear not known
     id: "afa5b6f2-344d-11e9-a414-719c6709cf3e",
   },
-  { 
+  {
     name: 'Sandi Metz', // birthyear not known
     id: "afa5b6f3-344d-11e9-a414-719c6709cf3e",
   },
@@ -69,7 +69,7 @@ let books = [
     author: 'Joshua Kerievsky',
     id: "afa5de01-344d-11e9-a414-719c6709cf3e",
     genres: ['refactoring', 'patterns']
-  },  
+  },
   {
     title: 'Practical Object-Oriented Design, An Agile Primer Using Ruby',
     published: 2012,
@@ -101,6 +101,15 @@ const typeDefs = `
     allAuthors: [Author!]!
   }
 
+  type Mutation {
+    addBook(
+      title: String!
+      author: String!
+      published: Int!
+      genres: [String!]!
+    ) : Book
+  }
+
   type Book {
     title: String!
     author: String!
@@ -110,16 +119,19 @@ const typeDefs = `
 
   type Author {
     name: String!
+    born: Int
     bookCount: Int!
   }
 `
+
+const { v1: uuid } = require('uuid')
 
 const resolvers = {
   Query: {
     bookCount: () => books.length,
     authorCount: () => authors.length,
     allBooks: (root, args) => {
-      const {author, genre} = args
+      const { author, genre } = args
       return books.filter(b => {
         const matchByAuthor = !author || (author && author == b.author)
         const matchByGenre = !genre || (genre && b.genres.includes(genre))
@@ -127,18 +139,40 @@ const resolvers = {
       })
     },
     allAuthors: () => {
-      const booksByAuthor = books.reduce((acc, book) => {
-        const { author } = book;
-        acc[author] = [...(acc[author] || []), book];
-        return acc;
-      }, {});
+      const authorStats = authors.map(a => {
+        const bookCount = books
+          .filter(b => b.author == a.name)
+          .reduce((sum, b) => {
+            return sum + 1
+          }, 0)
 
-      return Object.keys(booksByAuthor).map(author => {
         return {
-          name: author,
-          bookCount: booksByAuthor[author].length
+          ...a,
+          bookCount: bookCount
         }
       })
+
+      console.log(authorStats)
+
+      return authorStats
+    }
+  },
+  Mutation: {
+    addBook: (root, args) => {
+      const { title, author, published, genres } = args
+      const existingAuthor = authors.find(a => a.name == author)
+
+      if (!existingAuthor) {
+        const authorId = uuid()
+        const newAuthor = { author, id: authorId }
+        authors = authors.concat(newAuthor)
+      }
+
+      const bookId = uuid()
+      const newBook = { title, author, published, genres, id: bookId }
+      books = books.concat(newBook)
+
+      return newBook
     }
   }
 }
