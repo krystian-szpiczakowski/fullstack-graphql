@@ -163,7 +163,7 @@ const resolvers = {
 
       if (!existingAuthor) {
         const authorId = uuid()
-        const newAuthor = { author, id: authorId }
+        const newAuthor = { name: author, id: authorId }
         authors = authors.concat(newAuthor)
       }
 
@@ -175,9 +175,6 @@ const resolvers = {
     },
     editAuthor: (root, args) => {
       const {name, setBornTo} = args
-      console.log(name)
-      console.log(setBornTo)
-
       const author = authors.find(a => a.name == name)
 
       if (author) {
